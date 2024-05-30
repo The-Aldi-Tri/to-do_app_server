@@ -1,70 +1,43 @@
 const Joi = require("joi");
 
-const usernameSchema = Joi.string().alphanum().min(3).max(30).messages({
-  "string.alphanum": "Username must contain only alphanumeric characters",
-  "string.min": "Username must be at least 3 characters",
-  "string.max": "Username must be at max 30 characters",
-});
-
-const emailSchema = Joi.string().email().messages({
-  "string.email": "Invalid email address",
-});
-
+const usernameSchema = Joi.string().alphanum().min(3).max(50);
+const emailSchema = Joi.string().email();
 const passwordSchema = Joi.string()
+  .alphanum()
   .min(8)
-  .max(30)
-  .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])"))
-  .messages({
-    "string.min": "Password must be at least 8 characters",
-    "string.max": "Password must not exceed 30 characters",
-    "string.pattern.base":
-      "Password must contain at least one lowercase letter and one uppercase letter",
-  });
+  .max(128)
+  .pattern(new RegExp("(?=.*[a-z])"))
+  .message("{#label} must contain at least one lowercase letter")
+  .pattern(new RegExp("(?=.*[A-Z])"))
+  .message("{#label} must contain at least one uppercase letter")
+  .pattern(new RegExp("(?=.*[0-9])"))
+  .message("{#label} must contain at least one number");
 
 const registerSchema = Joi.object({
-  username: usernameSchema
-    .required()
-    .messages({ "any.required": "Username is required" }),
-  email: emailSchema
-    .required()
-    .messages({ "any.required": "Email is required" }),
-  password: passwordSchema
-    .required()
-    .messages({ "any.required": "Password is required" }),
-  rePassword: Joi.string().valid(Joi.ref("password")).required().messages({
-    "any.only": "Passwords must match",
-    "any.required": "Password confirmation is required",
+  username: usernameSchema.required(),
+  email: emailSchema.required(),
+  password: passwordSchema.required(),
+  confirm_password: Joi.valid(Joi.ref("password")).required().messages({
+    "any.only": "confirm password must match password",
   }),
 });
 
 const loginSchema = Joi.object({
-  emailOrUsername: Joi.alternatives().conditional(Joi.string().pattern(/@/), {
-    then: emailSchema
-      .required()
-      .messages({ "any.required": "Email is required" }),
-    otherwise: usernameSchema
-      .required()
-      .messages({ "any.required": "Username is required" }),
+  email_or_username: Joi.alternatives().conditional(Joi.string().pattern(/@/), {
+    then: emailSchema.required(),
+    otherwise: usernameSchema.required(),
   }),
-  password: passwordSchema
-    .required()
-    .messages({ "any.required": "Password is required" }),
-  rememberMe: Joi.boolean().required().messages({
-    "boolean.base": "Remember me must be true or false",
-    "any.required": "Remember me is required",
-  }),
+  password: passwordSchema.required(),
+  remember_me: Joi.boolean().required(),
 });
 
 const changePasswordSchema = Joi.object({
-  currentPassword: passwordSchema
-    .required()
-    .messages({ "any.required": "Current password is required" }),
-  newPassword: passwordSchema
-    .not(Joi.ref("currentPassword"))
+  current_password: passwordSchema.required(),
+  new_password: passwordSchema
+    .not(Joi.ref("current_password"))
     .required()
     .messages({
-      "any.required": "New password is required",
-      "any.not": "New password must be different from current password",
+      "any.invalid": "new password must be different from current password",
     }),
 });
 

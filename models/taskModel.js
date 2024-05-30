@@ -6,7 +6,7 @@ const taskSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  username: {
+  userId: {
     type: String,
     required: true,
   },
@@ -16,16 +16,16 @@ const taskSchema = new mongoose.Schema({
   },
   details: {
     type: String,
-    default: "",
+    default: "", // Allows empty strings
   },
   finished: {
     type: Boolean,
-    default: false,
+    required: true,
   },
 });
 
 // Create a compound unique index
-taskSchema.index({ username: 1, createdAt: -1 }, { unique: true }); // 1 ascending, -1 descending order
+taskSchema.index({ createdAt: -1, userId: 1 }, { unique: true }); // 1 ascending, -1 descending order
 
 // Create task model
 const Task = mongoose.model("Task", taskSchema);

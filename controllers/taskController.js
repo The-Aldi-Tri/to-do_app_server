@@ -1,189 +1,169 @@
 const Task = require("../models/taskModel");
+const dateTimeToWIB = require("../utils/dateTimeToWIB");
+const isValidObjectId = require("../utils/isValidObjectId");
 
 const createTask = async (req, res) => {
-  // Extract task data
-  const username = req.params.username;
-  const { createdAt, task, details, finished } = req.body;
+  const userId = req.decoded.id;
+
+  if (!isValidObjectId(userId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid user id" });
+  }
+
+  const { task, details, finished } = req.body;
+
   try {
-    // Create a new task instance
     const newTask = new Task({
-      username: username,
-      createdAt: createdAt,
+      userId: userId,
+      createdAt: dateTimeToWIB(new Date()),
       task: task,
+      details: details,
+      finished: finished,
     });
-    if (details) newTask = { ...newTask, details: details };
-    if (finished !== undefined) newTask = { ...newTask, finished: finished };
 
-    // Save the task to the database
-    await newTask.save();
+    const savedTask = await newTask.save();
 
-    // Respond with success message
     return res.status(201).json({
-      status: "Success",
+      status: "SUCCESS",
       message: "Task created successfully",
-      data: newTask,
+      data: savedTask,
     });
   } catch (error) {
-    console.error("Error saving task:", error);
+    console.error("Error creating task:", error);
     return res.status(500).json({
-      status: "Fail",
-      message: "Internal server error",
-      error: error.message,
+      status: "FAILED",
+      message: "An unexpected error occurred",
     });
   }
 };
 
-const getTasksByUsername = async (req, res) => {
-  const username = req.params.username;
-  try {
-    const tasks = await Task.find({ username: username });
+const getTasks = async (req, res) => {
+  const userId = req.decoded.id;
 
-    if (tasks.length === 0)
-      return res
-        .status(404)
-        .json({ status: "fail", message: "Tasks not found" });
+  if (!isValidObjectId(userId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid user id" });
+  }
+
+  try {
+    const tasks = await Task.find({ userId: userId }).sort({ createdAt: -1 }); // -1 : descending order
 
     return res.status(200).json({
-      status: "Success",
-      message: "Successfully getting tasks",
+      status: "SUCCESS",
+      message: "Tasks retrieved successfully",
       data: tasks,
     });
   } catch (error) {
-    console.error("Error getting tasks:", error);
+    console.error("Error retrieving tasks:", error);
     return res.status(500).json({
-      status: "Fail",
-      message: "Internal server error",
-      error: error.message,
+      status: "FAILED",
+      message: "An unexpected error occurred",
     });
   }
 };
 
 const getTaskById = async (req, res) => {
-  const id = req.params.id;
+  const taskId = req.params.id;
+
+  if (!isValidObjectId(taskId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid task id" });
+  }
+
   try {
-    const task = await Task.findById(id);
+    const task = await Task.findById(taskId);
 
     if (!task)
       return res
         .status(404)
-        .json({ status: "fail", message: "Task not found" });
+        .json({ status: "FAILED", message: "Task not found" });
 
     return res.status(200).json({
-      status: "Success",
-      message: "Successfully getting task",
+      status: "SUCCESS",
+      message: "Task retrieved successfully",
       data: task,
     });
   } catch (error) {
-    console.error("Error getting task:", error);
+    console.error("Error retrieving task:", error);
     return res.status(500).json({
-      status: "Fail",
-      message: "Internal server error",
-      error: error.message,
+      status: "FAILED",
+      message: "An unexpected error occurred",
     });
   }
 };
 
-// Probably not used in this project
-// const editTaskById = async (req, res) => {
-//   const id = req.params.id;
-//   const { task, details, finished } = req.body;
-//   try {
-//     const taskFound = await Task.findById(id);
+const toggleFinishedById = async (req, res) => {
+  const taskId = req.params.id;
 
-//     if (!taskFound)
-//       return res
-//         .status(404)
-//         .json({ status: "Fail", message: "Task not found" });
+  if (!isValidObjectId(taskId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid task id" });
+  }
 
-//     if (task) taskFound = { ...taskFound, task: task };
-//     if (details) taskFound = { ...taskFound, details: details };
-//     if (finished !== undefined)
-//       taskFound = { ...taskFound, finished: finished };
-
-//     await taskFound.save();
-
-//     return res.status(200).json({
-//       status: "Success",
-//       message: "Successfully edited task",
-//       data: taskFound,
-//     });
-//   } catch (error) {
-//     console.error("Error editing task:", error);
-//     return res.status(500).json({
-//       status: "Fail",
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-const toggleFinished = async (req, res) => {
-  const id = req.params.id;
   try {
-    const task = await Task.findById(id);
+    const toggledTask = await Task.findByIdAndUpdate(
+      taskId,
+      [{ $set: { finished: { $not: "$finished" } } }], // toggle finished value
+      { new: true }
+    );
 
-    if (!task)
+    if (!toggledTask)
       return res
         .status(404)
-        .json({ status: "Fail", message: "Task not found" });
-
-    const newFinished = !task.finished;
-    task.finished = newFinished;
-
-    await task.save();
+        .json({ status: "FAILED", message: "Task not found" });
 
     return res.status(200).json({
-      status: "Success",
-      message: "Successfully toggling finished",
-      data: task,
+      status: "SUCCESS",
+      message: "Task(finished field) toggled successfully",
+      data: toggledTask,
     });
   } catch (error) {
-    console.error("Error toggling finished:", error);
+    console.error("Error toggling task(finished field):", error);
     return res.status(500).json({
-      status: "Fail",
-      message: "Internal server error",
-      error: error.message,
+      status: "FAILED",
+      message: "An unexpected error occurred",
     });
   }
 };
 
 const deleteTaskById = async (req, res) => {
-  const id = req.params.id;
-  try {
-    const task = await Task.findById(id);
+  const taskId = req.params.id;
 
-    if (!task)
+  if (!isValidObjectId(taskId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid task id" });
+  }
+
+  try {
+    const deletedTask = await Task.findByIdAndDelete(taskId);
+
+    if (!deletedTask)
       return res
         .status(404)
-        .json({ status: "Fail", message: "Task not found" });
+        .json({ status: "FAILED", message: "Task not found" });
 
-    const deleted = await Task.deleteOne({ _id: id });
-
-    if (deleted.deletedCount === 1) {
-      return res.status(200).json({
-        status: "Success",
-        message: "Task deleted successfully",
-      });
-    } else {
-      return res.status(400).json({
-        status: "Fail",
-        message: "Failed to delete task",
-      });
-    }
+    return res.status(200).json({
+      status: "SUCCESS",
+      message: "Task deleted successfully",
+    });
   } catch (error) {
     console.error("Error deleting task:", error);
     return res.status(500).json({
-      status: "Fail",
-      message: "Internal server error",
-      error: error.message,
+      status: "FAILED",
+      message: "An unexpected error occurred",
     });
   }
 };
 
 module.exports = {
   createTask,
-  getTasksByUsername,
+  getTasks,
   getTaskById,
-  toggleFinished,
+  toggleFinishedById,
   deleteTaskById,
 };

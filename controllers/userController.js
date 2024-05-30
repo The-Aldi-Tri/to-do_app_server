@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
-const convertDateTimeToWIB = require("../utils/convertWIB");
+const dateTimeToWIB = require("../utils/dateTimeToWIB");
+const isValidObjectId = require("../utils/isValidObjectId");
 
 const createUser = async (req, res) => {
   // Extract user data from request body
@@ -14,126 +15,156 @@ const createUser = async (req, res) => {
       username: username,
       email: email,
       password: hashedPassword, // Store hashed password
-      createdAt: convertDateTimeToWIB(new Date()),
+      createdAt: dateTimeToWIB(new Date()),
     });
 
     // Save the user to the database
-    const savedUser = await newUser.save();
+    const createdUser = await newUser.save();
+
+    // Exclude sensitive properties from the response
+    const sanitizedUser = createdUser.toObject();
+    delete sanitizedUser.password;
 
     // Respond with success message
     return res.status(201).json({
-      status: "Success",
+      status: "SUCCESS",
       message: "User created successfully",
-      data: {
-        _id: savedUser._id,
-        username: savedUser.username,
-        email: savedUser.email,
-        createdAt: savedUser.createdAt,
-      },
+      data: sanitizedUser,
     });
   } catch (error) {
-    console.error("Error creating user:", error);
-    // Handle validation error
-    if (error.name === "ValidationError") {
-      console.error("Error: Validation Error");
-      return res.status(400).json({ message: "Validation Error" });
-
-      // Handle duplicate username error
-    } else if (error.code === 11000 && error.keyPattern.username === 1) {
-      console.error("Error: Duplicate username");
-      return res.status(400).json({ message: "Duplicate username" });
-
-      // Handle duplicate email error
-    } else if (error.code === 11000 && error.keyPattern.email === 1) {
-      console.error("Error: Duplicate email");
-      return res.status(400).json({ message: "Duplicate email" });
-
-      // Handle other errors
-    } else {
-      console.error("Error saving user:", error);
-      return res.status(500).json({ "Error creating user": error });
+    // Duplicate username error
+    if (error.code === 11000 && error.keyPattern.username === 1) {
+      return res
+        .status(409)
+        .json({ status: "FAILED", message: "This username is already in use" });
+    }
+    // Duplicate email error
+    else if (error.code === 11000 && error.keyPattern.email === 1) {
+      return res
+        .status(409)
+        .json({ status: "FAILED", message: "This email is already in use" });
+    }
+    // Handle other error
+    else {
+      console.error("Error creating user:", error);
+      return res.status(500).json({
+        status: "FAILED",
+        message: "An unexpected error occurred",
+      });
     }
   }
 };
 
 const getUserById = async (req, res) => {
-  const id = req.params.id;
-  try {
-    const user = await User.findById(id).select("-password");
+  const userId = req.decoded.id;
 
-    if (!user)
+  if (!isValidObjectId(userId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid user id" });
+  }
+
+  try {
+    const foundUser = await User.findById(userId).select({ password: 0 });
+
+    if (!foundUser)
       return res
         .status(404)
-        .json({ status: "Fail", message: "User not found" });
+        .json({ status: "FAILED", message: "User not found" });
 
     return res.status(200).json({
-      status: "Success",
-      message: "User found",
-      data: user,
+      status: "SUCCESS",
+      message: "User retrieved successfully",
+      data: foundUser,
     });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error retrieving user:", error);
     return res.status(500).json({
-      message: "Internal server error",
+      status: "FAILED",
+      message: "An unexpected error occurred",
     });
   }
 };
 
 const editUserById = async (req, res) => {
-  const id = req.params.id;
-  const { username, email } = req.body;
-  try {
-    const user = await User.findById(id).select("-password");
+  const userId = req.decoded.id;
 
-    if (!user)
+  if (!isValidObjectId(userId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid user id" });
+  }
+
+  const updateData = req.body;
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    }).select({ password: 0 });
+
+    if (!updatedUser)
       return res
         .status(404)
-        .json({ status: "Fail", message: "User not found" });
-
-    user.username = username;
-    user.email = email;
-    await user.save();
+        .json({ status: "FAILED", message: "User not found" });
 
     return res.status(200).json({
-      status: "Success",
-      message: "User edited successfully",
-      data: user,
+      status: "SUCCESS",
+      message: "User updated successfully",
+      data: updatedUser,
     });
   } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({
-      message: "Internal server error",
-    });
+    // Duplicate username error
+    if (error.code === 11000 && error.keyPattern.username === 1) {
+      return res
+        .status(409)
+        .json({ status: "FAILED", message: "This username is already in use" });
+    }
+    // Duplicate email error
+    else if (error.code === 11000 && error.keyPattern.email === 1) {
+      return res
+        .status(409)
+        .json({ status: "FAILED", message: "This email is already in use" });
+    }
+    // Handle other error
+    else {
+      console.error("Error updating user:", error);
+      return res.status(500).json({
+        status: "FAILED",
+        message: "An unexpected error occurred",
+      });
+    }
   }
 };
 
 const deleteUserById = async (req, res) => {
-  const id = req.params.id;
-  try {
-    const user = await User.findById(id).select("-password");
+  const userId = req.decoded.id;
 
-    if (!user)
+  if (!isValidObjectId(userId)) {
+    return res
+      .status(422)
+      .json({ status: "FAILED", message: "Invalid user id" });
+  }
+
+  try {
+    const deletedUser = await User.findByIdAndDelete(userId).select({
+      password: 0,
+    });
+
+    if (!deletedUser)
       return res
         .status(404)
-        .json({ status: "Fail", message: "User not found" });
+        .json({ status: "FAILED", message: "User not found" });
 
-    const deleted = await User.deleteOne({ _id: id });
-
-    if (deleted.deletedCount === 1) {
-      return res.status(200).json({
-        status: "Success",
-        message: "User deleted successfully",
-      });
-    } else {
-      return res.status(400).json({
-        status: "Fail",
-        message: "Failed to delete user",
-      });
-    }
+    return res.status(200).json({
+      status: "SUCCESS",
+      message: "User deleted successfully",
+    });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error deleting user:", error);
     return res.status(500).json({
-      message: "Internal server error",
+      status: "FAILED",
+      message: "An unexpected error occurred",
+      error: error.message,
     });
   }
 };
