@@ -1,24 +1,24 @@
 const express = require("express");
 const taskRouter = express.Router();
 
-const jwtVerifyToken = require("../middlewares/jwtAuthenticate");
+const jwtAuthenticate = require("../middlewares/jwtAuthenticate");
 const joiValidate = require("../middlewares/joiValidate");
 const { createTaskSchema } = require("../schemas/taskSchema");
 const taskController = require("../controllers/taskController");
 
 taskRouter.post(
   "/",
-  jwtVerifyToken,
+  jwtAuthenticate,
   joiValidate(createTaskSchema),
   taskController.createTask
 );
-taskRouter.get("/", jwtVerifyToken, taskController.getTasks);
-taskRouter.get("/:id", jwtVerifyToken, taskController.getTaskById);
+taskRouter.get("/", jwtAuthenticate, taskController.getTasks);
+taskRouter.get("/:id", jwtAuthenticate, taskController.getTaskById);
 taskRouter.put(
   "/toggle-finished/:id",
-  jwtVerifyToken,
+  jwtAuthenticate,
   taskController.toggleFinishedById
 );
-taskRouter.delete("/:id", jwtVerifyToken, taskController.deleteTaskById);
+taskRouter.delete("/:id", jwtAuthenticate, taskController.deleteTaskById);
 
 module.exports = taskRouter;
