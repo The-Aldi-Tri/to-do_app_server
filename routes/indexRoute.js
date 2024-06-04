@@ -8,11 +8,11 @@ const allRoutes = [
   ["/tasks", taskRouter],
 ];
 
-const router = (app) => {
+const apiRouter = (app) => {
   allRoutes.forEach((route) => {
     const [path, router] = route;
     app.use(`/api${path}`, router);
   });
 };
 
-module.exports = router;
+module.exports = apiRouter;
