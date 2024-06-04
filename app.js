@@ -16,12 +16,14 @@ connectDb();
 app.use(helmet());
 
 // Handle cross-origin requests
-// app.use(
-//   cors({
-//     origin: ["http://localhost:3000"], // Allow requests from specific origin
-//     credentials: true, // Allow credentials (cookies, authorization headers)
-//   })
-// );
+if (process.env.NODE_ENV === "development") {
+  app.use(
+    cors({
+      origin: ["http://localhost:3000"], // Allow requests from specific origin
+      credentials: true, // Allow credentials (cookies, authorization headers)
+    })
+  );
+}
 
 // Request body parser using built-in
 app.use(express.json()); // Parse JSON bodies
@@ -31,7 +33,9 @@ app.use(express.json()); // Parse JSON bodies
 app.use(cookieParser(process.env.COOKIE_SECRET_KEY)); // Ensure cookie integrity
 
 // Serve static files (ONLY USE THIS IN DEV, NGINX IS BETTER AT THIS)
-app.use(express.static(path.join(__dirname, "../client/build")));
+if (process.env.NODE_ENV === "development") {
+  app.use(express.static(path.join(__dirname, "../client/build")));
+}
 
 // Apply rate limit to api routes
 app.use("/api", apiLimiter);
@@ -40,9 +44,11 @@ app.use("/api", apiLimiter);
 apiRouter(app);
 
 // Handle client-side routing (ONLY USE THIS IN DEV, NGINX IS BETTER AT THIS)
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
-});
+if (process.env.NODE_ENV === "development") {
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+  });
+}
 
 // Server
 const PORT = process.env.PORT || 3001;

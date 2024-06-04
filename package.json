@@ -2,11 +2,11 @@
   "name": "to-do-app_server",
   "version": "1.0.0",
   "description": "This is server for To-do App using MERN (MongoDB, Express, React, Nodejs) stack",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "start": "NODE_ENV=production node app.js",
+    "dev": "NODE_ENV=development nodemon app.js"
   },
   "author": "Aldi Tri M.",
   "license": "ISC",
