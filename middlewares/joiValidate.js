@@ -1,20 +1,14 @@
 const joiValidate = (schema) => {
-  return (req, res, next) => {
-    const { error } = schema.validate(req.body, {
-      abortEarly: false, // Report all errors (not stop after first error)
-      stripUnknown: true, // Strip unknown properties
-    });
-    if (error) {
-      const errors = error.details.map((detail) =>
-        detail.message.replace(/['"]/g, "").replace(/[_]/g, " ")
-      );
-      return res.status(422).json({
-        status: "FAILED",
-        message: "Data validation failed",
-        error: errors,
+  return async (req, res, next) => {
+    try {
+      await schema.validateAsync(req.body, {
+        abortEarly: process.env.NODE_ENV === "production", // if true: Report all errors (not stop after first error)
+        stripUnknown: true, // Strip unknown properties
       });
+      next();
+    } catch (err) {
+      next(err);
     }
-    next();
   };
 };
 

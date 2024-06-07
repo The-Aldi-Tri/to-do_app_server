@@ -53,7 +53,7 @@ const generateRefreshToken = (
   });
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   const { email_or_username, password, remember_me } = req.body;
 
   try {
@@ -100,12 +100,8 @@ const login = async (req, res) => {
       message: "Login successful",
       data: sanitizedUser,
     });
-  } catch (error) {
-    console.error("Error logging in:", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -130,28 +126,8 @@ const refresh = async (req, res) => {
     return res
       .status(200)
       .json({ status: "SUCCESS", message: "Refresh token successful" });
-  } catch (error) {
-    switch (error.name) {
-      case "TokenExpiredError":
-        return res
-          .status(401)
-          .json({ status: "FAILED", message: "Refresh token has expired" });
-      case "JsonWebTokenError":
-        return res
-          .status(401)
-          .json({ status: "FAILED", message: "Refresh token is invalid" });
-      case "NotBeforeError":
-        return res.status(401).json({
-          status: "FAILED",
-          message: "Refresh token is not yet valid",
-        });
-      default:
-        console.error("Error refreshing token:", error);
-        return res.status(500).json({
-          status: "FAILED",
-          message: "An unexpected error occurred",
-        });
-    }
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -190,12 +166,8 @@ const changePassword = async (req, res) => {
     return res
       .status(200)
       .json({ status: "SUCCESS", message: "Password changed successfully" });
-  } catch (error) {
-    console.error("Error changing password:", error);
-    res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 

@@ -3,7 +3,7 @@ const User = require("../models/userModel");
 const dateTimeToWIB = require("../utils/dateTimeToWIB");
 const isValidObjectId = require("../utils/isValidObjectId");
 
-const createUser = async (req, res) => {
+const createUser = async (req, res, next) => {
   // Extract user data from request body
   const { username, email, password } = req.body;
   try {
@@ -31,31 +31,12 @@ const createUser = async (req, res) => {
       message: "User created successfully",
       data: sanitizedUser,
     });
-  } catch (error) {
-    // Duplicate username error
-    if (error.code === 11000 && error.keyPattern.username === 1) {
-      return res
-        .status(409)
-        .json({ status: "FAILED", message: "This username is already in use" });
-    }
-    // Duplicate email error
-    else if (error.code === 11000 && error.keyPattern.email === 1) {
-      return res
-        .status(409)
-        .json({ status: "FAILED", message: "This email is already in use" });
-    }
-    // Handle other error
-    else {
-      console.error("Error creating user:", error);
-      return res.status(500).json({
-        status: "FAILED",
-        message: "An unexpected error occurred",
-      });
-    }
+  } catch (err) {
+    next(err);
   }
 };
 
-const getUserById = async (req, res) => {
+const getUserById = async (req, res, next) => {
   const userId = req.decoded.id;
 
   if (!isValidObjectId(userId)) {
@@ -77,16 +58,12 @@ const getUserById = async (req, res) => {
       message: "User retrieved successfully",
       data: foundUser,
     });
-  } catch (error) {
-    console.error("Error retrieving user:", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
-const editUserById = async (req, res) => {
+const editUserById = async (req, res, next) => {
   const userId = req.decoded.id;
 
   if (!isValidObjectId(userId)) {
@@ -112,31 +89,12 @@ const editUserById = async (req, res) => {
       message: "User updated successfully",
       data: updatedUser,
     });
-  } catch (error) {
-    // Duplicate username error
-    if (error.code === 11000 && error.keyPattern.username === 1) {
-      return res
-        .status(409)
-        .json({ status: "FAILED", message: "This username is already in use" });
-    }
-    // Duplicate email error
-    else if (error.code === 11000 && error.keyPattern.email === 1) {
-      return res
-        .status(409)
-        .json({ status: "FAILED", message: "This email is already in use" });
-    }
-    // Handle other error
-    else {
-      console.error("Error updating user:", error);
-      return res.status(500).json({
-        status: "FAILED",
-        message: "An unexpected error occurred",
-      });
-    }
+  } catch (err) {
+    next(err);
   }
 };
 
-const deleteUserById = async (req, res) => {
+const deleteUserById = async (req, res, next) => {
   const userId = req.decoded.id;
 
   if (!isValidObjectId(userId)) {
@@ -160,12 +118,7 @@ const deleteUserById = async (req, res) => {
       message: "User deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting user:", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 

@@ -29,12 +29,8 @@ const createTask = async (req, res) => {
       message: "Task created successfully",
       data: savedTask,
     });
-  } catch (error) {
-    console.error("Error creating task:", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -55,12 +51,8 @@ const getTasks = async (req, res) => {
       message: "Tasks retrieved successfully",
       data: tasks,
     });
-  } catch (error) {
-    console.error("Error retrieving tasks:", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -86,12 +78,8 @@ const getTaskById = async (req, res) => {
       message: "Task retrieved successfully",
       data: task,
     });
-  } catch (error) {
-    console.error("Error retrieving task:", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -121,12 +109,8 @@ const toggleFinishedById = async (req, res) => {
       message: "Task(finished field) toggled successfully",
       data: toggledTask,
     });
-  } catch (error) {
-    console.error("Error toggling task(finished field):", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -151,12 +135,8 @@ const deleteTaskById = async (req, res) => {
       status: "SUCCESS",
       message: "Task deleted successfully",
     });
-  } catch (error) {
-    console.error("Error deleting task:", error);
-    return res.status(500).json({
-      status: "FAILED",
-      message: "An unexpected error occurred",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 

@@ -1,4 +1,7 @@
-require("dotenv").config(); // Load environment variables from .env file
+require("dotenv").config({
+  path: [".env.base", `.env.${process.env.NODE_ENV}`],
+  override: true,
+}); // Load environment variables
 const express = require("express");
 const app = express();
 const path = require("path");
@@ -8,6 +11,7 @@ const cookieParser = require("cookie-parser");
 const connectDb = require("./connections/databaseConnection");
 const apiLimiter = require("./middlewares/apiLimiter");
 const apiRouter = require("./routes/indexRoute");
+const errorHandler = require("./middlewares/errorHandler");
 
 // Connect to database
 connectDb();
@@ -33,9 +37,7 @@ app.use(express.json()); // Parse JSON bodies
 app.use(cookieParser(process.env.COOKIE_SECRET_KEY)); // Ensure cookie integrity
 
 // Serve static files (ONLY USE THIS IN DEV, NGINX IS BETTER AT THIS)
-if (process.env.NODE_ENV === "development") {
-  app.use(express.static(path.join(__dirname, "../client/build")));
-}
+// app.use(express.static(path.join(__dirname, "../client/build")));
 
 // Apply rate limit to api routes
 app.use("/api", apiLimiter);
@@ -43,12 +45,13 @@ app.use("/api", apiLimiter);
 // Mount api routes
 apiRouter(app);
 
+// Handle errors
+app.use(errorHandler);
+
 // Handle client-side routing (ONLY USE THIS IN DEV, NGINX IS BETTER AT THIS)
-if (process.env.NODE_ENV === "development") {
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
-  });
-}
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+// });
 
 // Server
 const PORT = process.env.PORT || 3001;
