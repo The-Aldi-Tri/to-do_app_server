@@ -2,13 +2,13 @@ const Task = require("../models/taskModel");
 const dateTimeToWIB = require("../utils/dateTimeToWIB");
 const isValidObjectId = require("../utils/isValidObjectId");
 
-const createTask = async (req, res) => {
+const createTask = async (req, res, next) => {
   const userId = req.decoded.id;
 
   if (!isValidObjectId(userId)) {
-    return res
-      .status(422)
-      .json({ status: "FAILED", message: "Invalid user id" });
+    res.locals.status = 422;
+    res.locals.json = { message: "Invalid user id" };
+    return next();
   }
 
   const { task, details, finished } = req.body;
@@ -24,72 +24,67 @@ const createTask = async (req, res) => {
 
     const savedTask = await newTask.save();
 
-    return res.status(201).json({
-      status: "SUCCESS",
-      message: "Task created successfully",
-      data: savedTask,
-    });
+    res.locals.status = 201;
+    res.locals.json = { message: "Task created successfully", data: savedTask };
+    return next();
   } catch (err) {
     next(err);
   }
 };
 
-const getTasks = async (req, res) => {
+const getTasks = async (req, res, next) => {
   const userId = req.decoded.id;
 
   if (!isValidObjectId(userId)) {
-    return res
-      .status(422)
-      .json({ status: "FAILED", message: "Invalid user id" });
+    res.locals.status = 422;
+    res.locals.json = { message: "Invalid user id" };
+    return next();
   }
 
   try {
     const tasks = await Task.find({ userId: userId }).sort({ createdAt: -1 }); // -1 : descending order
 
-    return res.status(200).json({
-      status: "SUCCESS",
-      message: "Tasks retrieved successfully",
-      data: tasks,
-    });
+    res.locals.status = 200;
+    res.locals.json = { message: "Tasks retrieved successfully", data: tasks };
+    return next();
   } catch (err) {
     next(err);
   }
 };
 
-const getTaskById = async (req, res) => {
+const getTaskById = async (req, res, next) => {
   const taskId = req.params.id;
 
   if (!isValidObjectId(taskId)) {
-    return res
-      .status(422)
-      .json({ status: "FAILED", message: "Invalid task id" });
+    res.locals.status = 422;
+    res.locals.json = { message: "Invalid user id" };
+    return next();
   }
 
   try {
     const task = await Task.findById(taskId);
 
-    if (!task)
-      return res
-        .status(404)
-        .json({ status: "FAILED", message: "Task not found" });
+    if (!task) {
+      res.locals.status = 404;
+      res.locals.json = { message: "Task not found" };
+      return next();
+    }
 
-    return res.status(200).json({
-      status: "SUCCESS",
-      message: "Task retrieved successfully",
-      data: task,
-    });
+    res.locals.status = 200;
+    res.locals.json = { message: "Task retrieved successfully", data: task };
+    return next();
   } catch (err) {
     next(err);
   }
 };
 
-const toggleFinishedById = async (req, res) => {
+const toggleFinishedById = async (req, res, next) => {
   const taskId = req.params.id;
 
   if (!isValidObjectId(taskId)) {
-    return res
-      .status(422)
-      .json({ status: "FAILED", message: "Invalid task id" });
+    res.locals.status = 422;
+    res.locals.json = { message: "Invalid user id" };
+    return next();
   }
 
   try {
@@ -99,42 +94,44 @@ const toggleFinishedById = async (req, res) => {
       { new: true }
     );
 
-    if (!toggledTask)
-      return res
-        .status(404)
-        .json({ status: "FAILED", message: "Task not found" });
+    if (!toggledTask) {
+      res.locals.status = 404;
+      res.locals.json = { message: "Task not found" };
+      return next();
+    }
 
-    return res.status(200).json({
-      status: "SUCCESS",
+    res.locals.status = 200;
+    res.locals.json = {
       message: "Task(finished field) toggled successfully",
       data: toggledTask,
-    });
+    };
+    return next();
   } catch (err) {
     next(err);
   }
 };
 
-const deleteTaskById = async (req, res) => {
+const deleteTaskById = async (req, res, next) => {
   const taskId = req.params.id;
 
   if (!isValidObjectId(taskId)) {
-    return res
-      .status(422)
-      .json({ status: "FAILED", message: "Invalid task id" });
+    res.locals.status = 422;
+    res.locals.json = { message: "Invalid user id" };
+    return next();
   }
 
   try {
     const deletedTask = await Task.findByIdAndDelete(taskId);
 
-    if (!deletedTask)
-      return res
-        .status(404)
-        .json({ status: "FAILED", message: "Task not found" });
+    if (!deletedTask) {
+      res.locals.status = 404;
+      res.locals.json = { message: "Task not found" };
+      return next();
+    }
 
-    return res.status(200).json({
-      status: "SUCCESS",
-      message: "Task deleted successfully",
-    });
+    res.locals.status = 200;
+    res.locals.json = { message: "Task deleted successfully" };
+    return next();
   } catch (err) {
     next(err);
   }

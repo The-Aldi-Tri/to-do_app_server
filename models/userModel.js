@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+// userSchema.post('save', function(err,doc,next) {
+
+//   next();
+// });
+
 // Create user model
 const User = mongoose.model("User", userSchema);
 

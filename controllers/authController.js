@@ -63,19 +63,21 @@ const login = async (req, res, next) => {
     });
 
     // Handle if user not found
-    if (!user)
-      return res
-        .status(404)
-        .json({ status: "FAILED", message: "Email or Username not found" });
+    if (!user) {
+      res.locals.status = 404;
+      res.locals.json = { message: "Email or Username not found" };
+      return next();
+    }
 
     // Compare password
     const pwMatch = await bcrypt.compare(password, user.password);
 
     // Handle if password is incorrect
-    if (!pwMatch)
-      return res
-        .status(401)
-        .json({ status: "FAILED", message: "Invalid password" });
+    if (!pwMatch) {
+      res.locals.status = 401;
+      res.locals.json = { message: "Invalid password" };
+      return next();
+    }
 
     // Generate access token and refresh token
     const accessToken = generateAccessToken({ id: user._id });
@@ -95,23 +97,22 @@ const login = async (req, res, next) => {
     const sanitizedUser = { ...user._doc };
     delete sanitizedUser.password;
 
-    return res.status(200).json({
-      status: "SUCCESS",
-      message: "Login successful",
-      data: sanitizedUser,
-    });
+    res.locals.status = 200;
+    res.locals.json = { message: "Login successful", data: sanitizedUser };
+    return next();
   } catch (err) {
     next(err);
   }
 };
 
-const refresh = async (req, res) => {
+const refresh = async (req, res, next) => {
   const refreshToken = req.signedCookies["refreshToken"];
 
-  if (!refreshToken)
-    return res
-      .status(401)
-      .json({ status: "FAILED", message: "Refresh token not found" });
+  if (!refreshToken) {
+    res.locals.status = 401;
+    res.locals.json = { message: "Refresh token not found" };
+    return next();
+  }
 
   try {
     // Verify the refresh token
@@ -123,21 +124,21 @@ const refresh = async (req, res) => {
     // Send the new access token back to the client as cookie
     res.cookie("accessToken", accessToken, cookiesConfig.accessToken);
 
-    return res
-      .status(200)
-      .json({ status: "SUCCESS", message: "Refresh token successful" });
+    res.locals.status = 200;
+    res.locals.json = { message: "Refresh token successful" };
+    return next();
   } catch (err) {
     next(err);
   }
 };
 
-const changePassword = async (req, res) => {
+const changePassword = async (req, res, next) => {
   const id = req.decoded.id;
 
   if (!isValidObjectId(id)) {
-    return res
-      .status(422)
-      .json({ status: "FAILED", message: "Invalid user id" });
+    res.locals.status = 422;
+    res.locals.json = { message: "Invalid user id" };
+    return next();
   }
 
   const { current_password, new_password } = req.body;
@@ -145,17 +146,19 @@ const changePassword = async (req, res) => {
   try {
     const user = await User.findById(id);
 
-    if (!user)
-      return res
-        .status(404)
-        .json({ status: "FAILED", message: "User not found" });
+    if (!user) {
+      res.locals.status = 404;
+      res.locals.json = { message: "User not found" };
+      return next();
+    }
 
     const pwMatch = await bcrypt.compare(current_password, user.password);
 
-    if (!pwMatch)
-      return res
-        .status(401)
-        .json({ status: "FAILED", message: "Invalid password" });
+    if (!pwMatch) {
+      res.locals.status = 401;
+      res.locals.json = { message: "Invalid password" };
+      return next();
+    }
 
     const hashedPassword = await bcrypt.hash(new_password, 10);
 
@@ -163,28 +166,28 @@ const changePassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    return res
-      .status(200)
-      .json({ status: "SUCCESS", message: "Password changed successfully" });
+    res.locals.status = 200;
+    res.locals.json = { message: "Password changed successfully" };
+    return next();
   } catch (err) {
     next(err);
   }
 };
 
-const logout = async (req, res) => {
+const logout = async (req, res, next) => {
   // Delete access token and refresh token from cookies
   res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
 
-  return res
-    .status(200)
-    .json({ status: "SUCCESS", message: "Logout successful" });
+  res.locals.status = 200;
+  res.locals.json = { message: "Logout successful" };
+  return next();
 };
 
-const isValid = (req, res) => {
-  return res
-    .status(200)
-    .json({ status: "SUCCESS", message: "Token still valid" });
+const isValid = (req, res, next) => {
+  res.locals.status = 200;
+  res.locals.json = { message: "Token still valid" };
+  return next();
 };
 
 module.exports = { login, refresh, changePassword, logout, isValid };

@@ -41,4 +41,28 @@ const changePasswordSchema = Joi.object({
     }),
 });
 
-module.exports = { registerSchema, loginSchema, changePasswordSchema };
+const verifyCodeSchema = Joi.object({
+  email: Joi.string().email().required(),
+  code: Joi.string()
+    .pattern(/^[0-9]{6}$/)
+    .required()
+    .messages({
+      "string.pattern.base": "code must be a 6-digit number.",
+    }),
+});
+
+const checkAvailableSchema = Joi.object({
+  value: Joi.alternatives().conditional(Joi.string().pattern(/@/), {
+    then: emailSchema.required(),
+    otherwise: usernameSchema.required(),
+  }),
+});
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  changePasswordSchema,
+  verifyCodeSchema,
+  emailReqSchema: Joi.object({ email: emailSchema.required() }),
+  checkAvailableSchema,
+};

@@ -21,7 +21,11 @@
     "joi": "^17.13.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.0",
-    "path": "^0.12.7"
+    "nodemailer": "^6.9.13",
+    "path": "^0.12.7",
+    "uuid": "^10.0.0",
+    "winston": "^3.13.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.3.0",
